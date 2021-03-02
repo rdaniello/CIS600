@@ -1,0 +1,5 @@
+.axis path,
+.axis line{
+    stroke:blue;
+    stroke-width: .5;
+}

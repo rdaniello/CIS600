@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>D3 - Map</title>
+    <!-- Import external js libraries and stylesheets -->
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://d3js.org/topojson.v2.min.js"></script>
+    <link href="./css/bootstrap.min.css" rel="stylesheet">
+    <link href="./css/jquery-ui.css" rel="stylesheet">
+    <link href="./css/styles.css" rel="stylesheet">
+    <script src="./js/jquery-3.5.1.min.js"></script>
+    <script src="./js/jquery-ui.js"></script>
+    <script src="./js/bootstrap.bundle.min.js"></script>
+    <!-- Import project js files and styles -->
+    <script src="./js/filters.js"></script> 
+    <style>
+        .ui-slider .ui-slider-handle { width: 6px; margin-left: -3px; }
+        .tooltipData{
+            font-size: small;
+        }
+        .tooltip{
+            opacity: 0;
+            background-color: antiquewhite;
+            position: absolute;
+            width: 150px;
+            height: 60px;
+        }
+
+        #caption{
+            margin: auto;
+            padding-top: 1%;
+            padding-bottom: 1%;
+            padding-left: 4%;
+            font-family: serif;
+            font-size: 20pt;
+        }
+            
+        #canvasMap
+        {
+            width: 100%;
+
+            background-color:rgb(245, 245, 255);
+        }
+        path.path_geo{
+            stroke-width: .5px;
+            stroke: black;
+        }
+    </style>
+</head>
+<body>
+<div id="caption">
+    US COVID-19 Cases by County.
+</div>
+
+<div class="row" style="margin:auto">
+    <div class="col-2">
+        <div class="col-12 border border-primary rounded" style="background-color:rgb(245, 245, 255);">
+            <div class="row" style="font-weight:bold; display:flexbox; justify-content:center;">
+                <span style="text-decoration: underline;">Filters(</span>
+                <span id='filteredCount'>---</span>
+                <span >)</span>
+            </div>
+            <div class="row" style="padding:15px; text-align:center; font-size: 14px">
+                <div class="row" style="text-align:left; padding-left: 5px;">Infection Rate (cases/100k):</div>
+                <span type="text" id="irateSliderTxt" readonly style="border:0; color:#f6931f; font-size: 14px; width:100%; margin:auto"></span> 
+                <div style="width: 95%; margin:auto" id="irateSlider"></div>
+            </div>
+            <div class="row" style="padding:15px; text-align:center; font-size: 14px">
+                <div class="row" style="text-align:left; padding-left: 5px;">Temperature (&#176;F):</div>
+                <span type="text" id="tempSliderTxt" readonly style="border:0; color:#f6931f; font-size: 14px; width:100%; margin:auto"></span> 
+                <div style="width: 95%; margin:auto" id="tempSlider"></div>
+            </div>
+            <div class="row" style="padding:15px; text-align:center; font-size: 14px">
+                <div class="row" style="text-align:left; padding-left: 5px;">Population Density (/sq mile):</div>
+                <span type="text" id="popDenSliderTxt" readonly style="border:0; color:#f6931f; font-size: 14px; width:100%; margin:auto"></span> 
+                <div style="width: 95%; margin:auto" id="popDenSlider"></div>
+            </div>
+            <div class="row" style="padding:15px; text-align:center; font-size: 14px">
+                <div class="row" style="text-align:left; padding-left: 5px;">Date:</div>
+                <span type="text" id="dateSliderTxt" readonly style="border:0; color:#f6931f; font-size: 14px; width:100%; margin:auto"></span> 
+                <div style="width: 95%; margin:auto" id="dateSlider"></div>
+            </div>
+            <div class="row justify-content-center" style='margin-bottom:10px'>
+                    <div onclick='resetFilters()' class="btn-primary btn ">Reset Filters</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-10" >
+        <div class="col-12 border border-primary rounded" style ="padding: 10px;">
+            <div class="row" style="margin-bottom: 5px;">
+                <div class="col-12 ">
+                    <div class="col-12 border border-right-0 rounded" style="background-color:rgb(245, 245, 255);">
+                        <svg id="canvasScatter" viewBox="0 0 1000 200"></svg>
+
+                    </div>
+                </div>
+
+            </div>
+            <div class="row" id="container">
+                <div class="col-6 ">
+                    <div class="col-12 border border-right-0 rounded" style="background-color:rgb(245, 245, 255);">
+                        <svg id="canvasMap" viewBox="0 0 1000 800"></svg>
+                        
+                    </div>
+                </div>
+                <div class="col-6 ">
+                    <div class="col-12 border border-right-0 rounded" style="background-color:rgb(245, 245, 255);">
+                        Data Detail
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // global data arrays and filters
+    let filtered_irate_data = null;
+    let filteredFips = null;
+    let irate_data = null;
+    let county_data = null;
+    let geoJson = null;
+    // declare filters
+    var filters = new Filters();
+    // map zoom level
+    let mapZoom = {'k': 1, 'x': 1, 'y':1};
+
+    // disable redrawing map when resetting filters
+    let skipRedraw = false;
+
+    // select the svg elements
+    let svgMap = d3.select("#canvasMap");
+    let svgScatter = d3.select("#canvasScatter");
+    // load the data sources:
+    // Source 1: county meta
+    //let covid19="https://raw.githubusercontent.com/nytimes/covid-19-data/master/live/us-counties.csv";
+    let covid19="data/countymeta.csv";
+    let iratefile = "data/irate.csv";
+    // source 2: US Census Counties geojson
+    let geojson = "data/us_counties_topo.json";
+
+    Promise.all(
+        [
+            d3.json(geojson),
+            d3.csv(covid19),
+            d3.csv(iratefile)],d3.autoType()).then(main)
+
+    function getColor(density){
+        if(density < 25){
+            return 0;
+        }
+        if(density < 50){
+            return 1;
+        }
+        if(density < 75){
+            return 2;
+        }
+        if(density < 100){
+            return 3;
+        }
+        if(density < 150){
+            return 4;
+        }
+        if(density < 200){
+            return 5;
+        }
+        if(density < 300){
+            return 6;
+        }
+        if(density < 500){
+            return 7;
+        }
+        if(density < 700){
+            return 8;
+        }
+        if(density < 1000){
+            return 9;
+        }
+        if(density < 2000){
+            return 10;
+        }
+        return 11
+    }
+
+    function main(data){    
+        geoJson = topojson.feature(data[0],data[0].objects.cb_2018_us_county_20m).features;
+        county_data = d3.group(data[1],function(d){return d.fips;}); // groups of fips
+        console.log(county_data);
+        irate_data = data[2];
+        console.log(irate_data);
+        filtered_irate_data = irate_data;
+
+        // set the init filters limits based on data extent
+        filters.setInitLimits(irate_data, county_data);
+
+        
+        // set-up jQueryUI filter widgets
+        $( "#filteredCount" ).text(irate_data.length);
+        filters.applyjQUI();
+        
+
+        // get initial filtered fips and do intial drawing
+        filteredFips = applyFilters();
+    }
+
+    function drawMap(){    
+        let projection = d3.geoAlbersUsa()
+                        .scale(1300).translate([500, 400]);
+        let geo_generator = d3.geoPath().projection(projection);
+
+        let density_extent = d3.extent(county_data,function (d){
+            return getColor(+d.density);
+        })
+        
+        density_extent[0]=1
+        let colorScale = d3.scaleLinear()
+            .domain(density_extent)
+            .range(["green","red"])
+        svgMap.selectAll('g').remove();
+        let mapCanvas = svgMap.append('g')
+        mapCanvas.selectAll('path')
+            .data(geoJson)
+            .enter()
+            .append('path')
+            .attr("class","path_geo")
+            .attr("d",geo_generator)
+            .attr("fill","white")
+            .on("mousemove",function (mouseData,d){
+                let fff = d3.selectAll('.tooltip').remove();
+                d3.select('body')
+                    .append("div")
+                    .classed('tooltip',true)
+                    .style("opacity",.8)
+                    .style("left",(mouseData.x + 10).toString() +"px")
+                    .style("top",(mouseData.y + 10).toString()+"px")
+                    .html(
+                        "<div class='tooltipData'>County: "+county_data.get(d.properties.GEOID)[0].cname+"</div>" +
+                        "<div class='tooltipData'>State: "+county_data.get(d.properties.GEOID)[0].sname+"</div>" +
+                        "<div class='tooltipData' style='color:blue'>Pop Density: "+county_data.get(d.properties.GEOID)[0].density.toString()+" / mile</div>" 
+                    //   "<div class='tooltipData' style='color:red'>Deaths: "+county_data.get(d.properties.GEOID)[0].deaths.toString()+"</div>" +
+                    //   "<div class='tooltipData'></div>")
+                    )
+            })
+            .on("mouseleave",function (mouseData,d){
+                let fff = d3.selectAll('.tooltip').remove();
+
+            })
+
+            .transition()
+            .delay(function (d,i){return i/2})
+            .duration(100)
+            .style("fill",function (d){
+                try{
+                    let density = county_data.get(d.properties.GEOID)[0].density;
+                    if(density >= filters.lowPopDen && density < filters.highPopDen && filteredFips.includes(d.properties.GEOID)){
+                        let tmp = getColor(density);
+                        return colorScale(tmp);
+                    }
+                    else{
+                        return 'white';
+                    }
+                }
+                catch (error)
+                {
+                    return "white"
+                }
+            })
+        mapCanvas.attr('transform', mapZoom);
+        svgMap.call(d3.zoom()
+            .extent([[0,0],[1000,800]])
+            .scaleExtent([1,8])
+            .on("zoom",zoomedMap)
+        )
+        function zoomedMap({transform}){
+            mapCanvas.attr("transform",transform)
+            mapZoom = transform;
+        }
+    }
+
+    function applyFilters(){
+        // remove any lines and labels
+        svgScatter.selectAll('.lineLabel').remove();
+        svgScatter.selectAll('line').remove();
+
+        filteredFips = [];
+        let tmpfil = irate_data.filter(function(item, index){
+                let density = +county_data.get(item.fips)[0].density;
+                if(!(filteredFips.includes(item.fips))){
+                    filteredFips.push(item.fips);
+                }
+                return item.rate <= filters.highIrate &&
+                    item.rate >= filters.lowIrate &&
+                    item.temp >= filters.lowTemp &&
+                    item.temp <= filters.highTemp &&
+                    density <= filters.highPopDen &&
+                    density >= filters.lowPopDen &&
+                    new Date(item.week) >= filters.lowDate &&
+                    new Date(item.week) <= filters.highDate;
+                    
+        });
+
+        $( "#filteredCount" ).text(tmpfil.length);
+        filtered_irate_data = tmpfil;
+
+        if(!skipRedraw){
+            drawScatter();
+            drawMap();
+        }
+    }
+
+    function drawScatter(){
+        // margins - also set in filters so lines draw correctly
+        let margB = 20;
+        let margL = 40;
+        filters.margL = margL;
+        filters.margB = margB
+
+        // Extents
+        let irateExtent = d3.extent(filtered_irate_data, function(d){
+            return +d.rate;
+        })
+        let tempExtent = d3.extent(filtered_irate_data, function(d){
+            return +d.temp;
+        })
+
+        // Scales
+        var tempScale = d3.scaleLinear()
+            .domain(tempExtent)
+            .range([margL, 1000])
+        var irateScale = d3.scaleLinear()
+            .domain(irateExtent)
+            .range([200 - margB, 0])
+
+        let density_extent = d3.extent(county_data,function (d){
+            return getColor(+d.density);
+        })
+        
+        density_extent[0]=1
+        let colorScale = d3.scaleLinear()
+            .domain(density_extent)
+            .range(["green","red"])
+        
+        // remove old circles
+        svgScatter.selectAll('g').remove();
+        let scatterCanvas = svgScatter.append('g')
+        scatterCanvas.selectAll('circle')
+            .data(filtered_irate_data)
+            .enter()
+            .append('circle')
+            .attr('cx',function(d){
+                return tempScale(+d.temp);
+            })
+            .attr('cy',function(d){
+                if(+d.rate == 0){
+                    return irateScale(Math.log10(.000001)) ;
+                }
+                return irateScale((+d.rate)) ;
+            })
+            .attr('r',function(d){
+                return .3;
+            })
+            .style("fill", function(d){
+                try{
+                    let density = county_data.get(d.fips)[0].density;
+                    let tmp = getColor(density);
+                    return colorScale(tmp);
+                }
+                catch (error)
+                {
+                    console.log(error)
+                    return "white"
+                }
+            })
+
+        // Zoom functionality
+        svgScatter.call(d3.zoom()
+            .extent([[0,0],[1000,200]])
+            .scaleExtent([.5,8])
+            .on("zoom",zoomedScatter)
+        )
+        function zoomedScatter({transform}){
+            scatterCanvas.attr("transform",transform)
+        }
+
+        // Axises
+        var tempAxis = d3.axisBottom()
+            .scale(tempScale)
+            .tickFormat(function(d){
+                return d + '\u00B0';
+            })
+            
+        svgScatter.append('g')
+            .attr('transform','translate(0,' + (200 - margB) + ")")
+            .attr('class', 'axis')
+            .call(tempAxis);
+        
+        var iRateAxis = d3.axisLeft()
+            .scale(irateScale)
+            
+        svgScatter.append('g')
+            .attr('transform','translate(' + (margL) + ',0)')
+            .attr('class', 'axis')
+            .call(iRateAxis);
+
+    }
+
+    function resetFilters(){
+        // set the init filters limits based on data extent
+        filters.setInitLimits(irate_data, county_data);
+
+        // skip redrawing trigger when slider value changed
+        skipRedraw = true;
+        
+        let tmphTemp = filters.highTemp;
+        $( "#tempSlider" ).slider( "values", 0, filters.lowTemp );
+        $( "#tempSlider" ).slider( "values", 1, tmphTemp );
+        
+        // enable drawing
+        skip = false;
+        applyFilters();
+    }
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
