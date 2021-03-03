@@ -82,6 +82,93 @@
                 <span type="text" id="dateSliderTxt" readonly style="border:0; color:#f6931f; font-size: 14px; width:100%; margin:auto"></span> 
                 <div style="width: 95%; margin:auto" id="dateSlider"></div>
             </div>
+            <div class="row" style=" padding:15px; text-align:left; font-size: 14px">
+                <div class="row" style="text-align:left; padding-left: 5px;">State:</div>
+                <span type="text" id="dateSliderTxt" readonly style="border:0; color:#f6931f; font-size: 14px; width:100%; margin:auto"></span> 
+                <div style="width: 95%; margin:auto; height:400px; overflow-y: scroll;" id="stateDiv">
+                    <div id='northeast' class='stateFilterCOL'>
+                        <div  class='row'>
+                            <div class='col-8' onclick='toggleExpand("northeast")'><span id='neTxt'>+</span> Northeast </div>
+                            <div class='col-2'><input type="checkbox" onchange='checkToggleRegion(this,"NE")' checked></div>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"23")' checked><span> Maine</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"33")' checked><span> New Hampshire</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"50")' checked><span> Vermont</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"25")' checked><span> Massachusets</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"44")' checked><span> Rhode Island</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"09")' checked><span> Connecticut</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"36")' checked><span> New York</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"34")' checked><span> New Jersey</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"42")' checked><span> Pennsylvania</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"10")' checked><span> Delaware</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='NE' type="checkbox" onchange='checkBoxEvt(this,"24")' checked><span> Maryland</span>
+                        </div>
+                    </div>
+                    <div id='southeast' class='stateFilterCOL'>
+                        <div  class='row'>
+                            <div class='col-8' onclick='toggleExpand("southeast")'><span id='neTxt'>+</span> Southeast </div>
+                            <div class='col-2'><input type="checkbox" onchange='checkToggleRegion(this,"SE")' checked></div>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"54")' checked><span> West Virginia</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"51")' checked><span> Virgina</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"21")' checked><span> Kentucky</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"47")' checked><span> Tennessee</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"37")' checked><span> North Carolina</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"45")' checked><span> South Carolina</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"13")' checked><span> Georgia</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"01")' checked><span> Alabama</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"28")' checked><span> Mississippi</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"05")' checked><span> Arkanas</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"22")' checked><span> Louisiana</span>
+                        </div>
+                        <div style='margin-left: 10px;'>
+                            <input class='SE' type="checkbox" onchange='checkBoxEvt(this,"12")' checked><span> Florida</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="row justify-content-center" style='margin-bottom:10px'>
                     <div onclick='resetFilters()' class="btn-primary btn ">Reset Filters</div>
             </div>
@@ -125,11 +212,10 @@
     let geoJson = null;
     // declare filters
     var filters = new Filters();
+
     // map zoom level
     let mapZoom = {'k': 1, 'x': 1, 'y':1};
-
-    // disable redrawing map when resetting filters
-    let skipRedraw = false;
+    
 
     // select the svg elements
     let svgMap = d3.select("#canvasMap");
@@ -185,17 +271,52 @@
         return 11
     }
 
+    
+    function checkToggleRegion(elem, region){
+        filters.toggleRegion(elem, region);
+    }
+
+    function checkBoxEvt(elem, stateID){
+        let tmpArr = [];
+        if(elem.checked){
+            filters.stateFilter.push(stateID);
+        }
+        else{
+            tmpArr = filters.stateFilter.filter(function(val){
+                if(val != stateID){
+                    return val
+                }
+            })
+            filters.stateFilter = tmpArr;
+        }
+        
+        applyFilters();
+    }
+
+    function toggleExpand(id){
+        let elem = d3.select('#' + id);
+        if(elem.classed('stateFilterEX')){
+            elem.classed('stateFilterEX', false);
+            elem.classed('stateFilterCOL', true);
+            elem.select('span')
+                .text('+')
+        }
+        else{
+            elem.classed('stateFilterEX', true);
+            elem.classed('stateFilterCOL', false);
+            elem.select('span')
+                .text('-')
+        }
+    }
+
     function main(data){    
         geoJson = topojson.feature(data[0],data[0].objects.cb_2018_us_county_20m).features;
         county_data = d3.group(data[1],function(d){return d.fips;}); // groups of fips
-        console.log(county_data);
         irate_data = data[2];
-        console.log(irate_data);
         filtered_irate_data = irate_data;
 
         // set the init filters limits based on data extent
         filters.setInitLimits(irate_data, county_data);
-
         
         // set-up jQueryUI filter widgets
         $( "#filteredCount" ).text(irate_data.length);
@@ -203,7 +324,7 @@
         
 
         // get initial filtered fips and do intial drawing
-        filteredFips = applyFilters();
+        applyFilters();
     }
 
     function drawMap(){    
@@ -255,7 +376,11 @@
             .style("fill",function (d){
                 try{
                     let density = county_data.get(d.properties.GEOID)[0].density;
-                    if(density >= filters.lowPopDen && density < filters.highPopDen && filteredFips.includes(d.properties.GEOID)){
+                    let stateID = (d.properties.GEOID).substring(0,2);
+                    
+                    if(density >= filters.lowPopDen && density < filters.highPopDen 
+                        && filters.stateFilter.includes(stateID)
+                        && filteredFips.includes(d.properties.GEOID)){
                         let tmp = getColor(density);
                         return colorScale(tmp);
                     }
@@ -281,6 +406,8 @@
     }
 
     function applyFilters(){
+        let d = new Date()
+        console.log(d.getSeconds() + "." + d.getMilliseconds())
         // remove any lines and labels
         svgScatter.selectAll('.lineLabel').remove();
         svgScatter.selectAll('line').remove();
@@ -288,7 +415,9 @@
         filteredFips = [];
         let tmpfil = irate_data.filter(function(item, index){
                 let density = +county_data.get(item.fips)[0].density;
-                if(!(filteredFips.includes(item.fips))){
+                let stateID = item.fips.substring(0,2);
+
+                if(!(filteredFips.includes(item.fips) )){
                     filteredFips.push(item.fips);
                 }
                 return item.rate <= filters.highIrate &&
@@ -298,25 +427,31 @@
                     density <= filters.highPopDen &&
                     density >= filters.lowPopDen &&
                     new Date(item.week) >= filters.lowDate &&
-                    new Date(item.week) <= filters.highDate;
+                    new Date(item.week) <= filters.highDate &&
+                    filters.stateFilter.includes(stateID);
                     
         });
 
         $( "#filteredCount" ).text(tmpfil.length);
         filtered_irate_data = tmpfil;
-
-        if(!skipRedraw){
-            drawScatter();
-            drawMap();
-        }
+        let dd = new Date()
+        console.log(dd.getSeconds() + "." + dd.getMilliseconds())
+        drawScatter();
+        let ddd = new Date()
+        console.log(ddd.getSeconds() + "." + ddd.getMilliseconds())
+        drawMap();
     }
 
     function drawScatter(){
         // margins - also set in filters so lines draw correctly
+        let margT = 20;
         let margB = 20;
         let margL = 40;
+        let margR = 5;
+        filters.margT = margT;
+        filters.margR = margR;
         filters.margL = margL;
-        filters.margB = margB
+        filters.margB = margB;
 
         // Extents
         let irateExtent = d3.extent(filtered_irate_data, function(d){
@@ -329,10 +464,10 @@
         // Scales
         var tempScale = d3.scaleLinear()
             .domain(tempExtent)
-            .range([margL, 1000])
+            .range([margL, 1000 - margR])
         var irateScale = d3.scaleLinear()
             .domain(irateExtent)
-            .range([200 - margB, 0])
+            .range([200 - margB, margT])
 
         let density_extent = d3.extent(county_data,function (d){
             return getColor(+d.density);
@@ -342,6 +477,9 @@
         let colorScale = d3.scaleLinear()
             .domain(density_extent)
             .range(["green","red"])
+        
+        // remove old brush
+        svgScatter.select('.brush').remove()
         
         // remove old circles
         svgScatter.selectAll('g').remove();
@@ -364,9 +502,10 @@
             })
             .style("fill", function(d){
                 try{
-                    let density = county_data.get(d.fips)[0].density;
-                    let tmp = getColor(density);
-                    return colorScale(tmp);
+                    // let density = county_data.get(d.fips)[0].density;
+                    // let tmp = getColor(density);
+                    // return colorScale(tmp);
+                    return 'red';
                 }
                 catch (error)
                 {
@@ -375,15 +514,12 @@
                 }
             })
 
-        // Zoom functionality
-        svgScatter.call(d3.zoom()
-            .extent([[0,0],[1000,200]])
-            .scaleExtent([.5,8])
-            .on("zoom",zoomedScatter)
+        // Brush
+        let brushg = svgScatter.append('g');
+        let brush = brushg.call(d3.brush()
+            .extent([[margL,margT],[1000 - margR, 200 - margB]])
+            .on('end', updateScatterBrush)
         )
-        function zoomedScatter({transform}){
-            scatterCanvas.attr("transform",transform)
-        }
 
         // Axises
         var tempAxis = d3.axisBottom()
@@ -405,21 +541,24 @@
             .attr('class', 'axis')
             .call(iRateAxis);
 
+        function updateScatterBrush({selection}){
+            // get the bounds of the selected area scaled to irate and temperature
+            // set the 
+            filters.lowTemp = tempScale.invert(selection[0][0]);
+            filters.highTemp = tempScale.invert(selection[1][0]);
+            filters.lowIrate = irateScale.invert(selection[1][1]);
+            filters.highIrate = irateScale.invert(selection[0][1]);
+
+            applyFilters();
+        }
+
     }
 
     function resetFilters(){
-        // set the init filters limits based on data extent
-        filters.setInitLimits(irate_data, county_data);
+        // set the filter back to intial values
+        filters.resetFiltersValues();   
 
-        // skip redrawing trigger when slider value changed
-        skipRedraw = true;
-        
-        let tmphTemp = filters.highTemp;
-        $( "#tempSlider" ).slider( "values", 0, filters.lowTemp );
-        $( "#tempSlider" ).slider( "values", 1, tmphTemp );
-        
-        // enable drawing
-        skip = false;
+        // get initial filtered fips and do intial drawing
         applyFilters();
     }
 </script>
