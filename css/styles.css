@@ -1,3 +1,44 @@
+.ui-slider .ui-slider-handle { width: 6px; margin-left: -3px; }
+.tooltipData{
+    font-size: small;
+}
+.tooltip{
+    opacity: 0;
+    background-color: antiquewhite;
+    position: absolute;
+    width: 150px;
+    height: 60px;
+    border-radius:5px;
+    padding-left: 5px;
+}
+.tooltipScatter{
+    opacity: 0;
+    background-color: rgb(117, 166, 189);
+    position: absolute;
+    width: 175px;
+    height: 85px;
+    border-radius:5px;
+    padding-left: 5px;
+}
+#caption{
+    margin: auto;
+    padding-top: 1%;
+    padding-bottom: 1%;
+    padding-left: 4%;
+    font-family: serif;
+    font-size: 20pt;
+}
+    
+#canvasMap
+{
+    width: 100%;
+
+    background-color:rgb(245, 245, 255);
+}
+path.path_geo{
+    stroke-width: .5px;
+    stroke: black;
+}
 .axis path,
 .axis line{
     stroke:blue;
@@ -16,3 +57,7 @@
     height: 20px;
     overflow: hidden;
 }
+circle{
+    fill-opacity:.5;
+}
+

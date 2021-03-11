@@ -10,9 +10,10 @@ class Filters{
         this.highDate = new Date(2021,2,1)
         this.stateFilter = ['01','02','04','05','06','08','09','10','11','12','13','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29',
                             '30','31','32','33','34','35','36','37','38','39','40','41','42','44','45','46','47','48','49','50','51','53','54','55','56'];
-        this.NEStates = ['23','33','50','25','44','09','36','34','42','10','24'];
-        this.SEStates = ['54','51','21','47','37','45','13','01','28','05','22','12'];
-        
+        this.NEStates = ['23','33','50','25','44','09','36','34','42'];
+        this.SEStates = ['54','51','21','47','37','45','13','01','28','05','22','12', '40', '48','11','10','24'];
+        this.MWStates = ['17','18','26','39','55','19','20','27','29','31','38','46'];
+        this.WEStates = ['04','08','16','30','32','35','49','56','02','06','15','41','53'];
 
         // the limits for full data set
         // same time when resetting filter limits
@@ -31,6 +32,10 @@ class Filters{
         this.margL = 40;
         this.margT = 20;
         this.margR = 5;
+
+        // scatter plot d3 scales for current filter values
+        let currIrateScale = null;
+        let currTempScale = null;
     }
 
     toggleRegion(elem, region){
@@ -40,6 +45,12 @@ class Filters{
         }
         if(region == 'SE'){
             statesFil = this.SEStates;
+        }
+        if(region == 'MW'){
+            statesFil = this.MWStates;
+        }
+        if(region == 'WE'){
+            statesFil = this.WEStates;
         }
         let statesElem  = d3.selectAll('.' + region)
         if(elem.checked){
@@ -83,6 +94,7 @@ class Filters{
         this.highTemp = temp_extent[1];
         this.lowTemp = temp_extent[0];
 
+
         // population density
         let popDen_extent = d3.extent(countydata,function (d){
             return +d[1][0].density;
@@ -110,6 +122,7 @@ class Filters{
         this.highDateI = this.highDate;
     }
 
+    // used in debugging
     Print(){
         return("HRate: " + this.highIrate + " LRate: " + this.lowIrate 
             + " HTemp: " + this.highTemp + " LTemp: " + this.lowTemp
