@@ -291,7 +291,7 @@
     // Source 1: county meta
     //let covid19="https://raw.githubusercontent.com/nytimes/covid-19-data/master/live/us-counties.csv";
     let covid19="data/countymeta.csv";
-    let iratefile = "data/irate.csv";
+    let iratefile = "data/irate2.csv";
     // source 2: US Census Counties geojson
     let geojson = "data/us_counties_topo.json";
 
@@ -660,13 +660,14 @@
                 }
                 return irateScale((+d.rate)) ;
             })
-            .attr('r', .3)
+            .attr('r', .4)
             .style("fill", function(d){
                 try{
                     // let density = county_data.get(d.fips)[0].density;
                     // let tmp = getColor(density);
                     // return colorScale(tmp);
-                    return 'rgb(236, 148, 148)';
+                    //return 'rgb(236, 148, 148)';
+                    return 'gray';
                 }
                 catch (error)
                 {
