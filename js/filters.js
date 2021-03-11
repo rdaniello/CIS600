@@ -28,9 +28,9 @@ class Filters{
         this.stateFilterI = this.stateFilter;
 
         // margins 
-        this.margB = 20;
-        this.margL = 40;
         this.margT = 20;
+        this.margB = 30;
+        this.margL = 60;
         this.margR = 5;
 
         // scatter plot d3 scales for current filter values
