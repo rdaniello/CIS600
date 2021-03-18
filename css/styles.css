@@ -60,4 +60,7 @@ path.path_geo{
 circle{
     fill-opacity:.2;
 }
+circle.hlight{
+    fill-opacity:1;
+}
 
