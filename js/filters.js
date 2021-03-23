@@ -104,7 +104,6 @@ class Filters{
 
         // date 
         let date_Extent = d3.extent(iratedata, function(d){
-            
             return new Date(d.week);
         })
         this.lowDate = date_Extent[0];

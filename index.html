@@ -283,6 +283,10 @@
     // declare filters
     var filters = new Filters();
 
+    // previously selected county vars
+    let prevCountyElem = null;
+    let prevCountColor = null;
+
     // map zoom level
     let mapZoom = {'k': 1, 'x': 1, 'y':1};
     
@@ -420,7 +424,6 @@
             .append('path')
             .attr("class","path_geo")
             .attr("d",geo_generator)
-            .attr("fill","white")
             .on("mousemove",function (mouseData,d){
                 d3.selectAll('.tooltip').remove();
                 d3.selectAll('.tooltipScatter').remove();
@@ -434,8 +437,6 @@
                         "<div class='tooltipData'>County: "+county_data.get(d.properties.GEOID)[0].cname+"</div>" +
                         "<div class='tooltipData'>State: "+county_data.get(d.properties.GEOID)[0].sname+"</div>" +
                         "<div class='tooltipData' style='color:blue'>Pop Density: "+county_data.get(d.properties.GEOID)[0].density.toString()+" / sq. mile</div>" 
-                    //   "<div class='tooltipData' style='color:red'>Deaths: "+county_data.get(d.properties.GEOID)[0].deaths.toString()+"</div>" +
-                    //   "<div class='tooltipData'></div>")
                     )
             })
             .on("mouseleave",function (mouseData,d){
@@ -444,6 +445,11 @@
 
             })
             .on("click",function (mouseData,d){
+                // unhighlight selected county back to original color - if one is
+                if(!(prevCountyElem === null)){
+                    prevCountyElem.attr('fill', prevCountColor);
+                }
+
                 // will draw a highlighted poiint over data point 
                 // faster than assigning class to each point
                 // and then letting d3 select by class
@@ -452,13 +458,21 @@
                 hlightPoints = irate_data.filter(function(item){
                         return item.fips == d.properties.GEOID;
                 })
+
+                // update previous selected county to this one
+                prevCountyElem = d3.select(this);
+                prevCountColor = prevCountyElem.attr('fill');
+
+                // change selected fill color
+                prevCountyElem.attr('fill', 'rgb(117, 166, 189)');
+
                 drawHighLightedData();
             })
 
             .transition()
             .delay(function (d,i){return i/2})
             .duration(100)
-            .style("fill",function (d){
+            .attr("fill",function (d){
                 try{
                     let density = county_data.get(d.properties.GEOID)[0].density;
                     let stateID = (d.properties.GEOID).substring(0,2);
@@ -470,7 +484,7 @@
                         return colorScale(tmp);
                     }
                     else{
-                        return 'white';
+                        return 'gray';
                     }
                 }
                 catch (error)
@@ -491,7 +505,6 @@
     }
 
     function applyFilters(){
-
         // remove any lines and labels
         svgScatter.selectAll('.lineLabel').remove();
         svgScatter.selectAll('line').remove();
@@ -519,6 +532,9 @@
         $( "#filteredCount" ).text(tmpfil.length);
         
         filtered_irate_data = tmpfil;
+
+        // calc linear regression
+        linRegr();
         
         drawBar('canvasBarTemp', 'temp');
         drawBar('canvasBarIRate', 'irate');
@@ -633,6 +649,19 @@
         let hlightGrp = svgScatter.append('g')
         hlightGrp.attr('id', 'hlightGrp')
 
+        // line
+        var line = d3.line()
+                    .x(function(d){return filters.currTempScale(d.temp)})
+                    .y(function(d){return filters.currIrateScale(d.rate)});
+            
+            hlightGrp.append('path')
+                .datum(hlightPoints)
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1)
+                .attr('d', line)
+                .style('fill', 'none');
+
+        // the points
         hlightGrp.selectAll('circle')
             .data(hlightPoints)
             .enter()
@@ -685,18 +714,8 @@
                 return d3.interpolateRdYlGn(hlightScale(new Date(d.week)));
             });
 
-            // line
-            var line = d3.line()
-                        .x(function(d){return filters.currTempScale(d.temp)})
-                        .y(function(d){return filters.currIrateScale(d.rate)});
-            
-            hlightGrp.append('path')
-                .datum(hlightPoints)
-                .attr('stroke', 'black')
-                .attr('stroke-width', 1)
-                .attr('d', line)
-                .style('fill', 'none');
-            
+            // redraw axises and labels - hide out of bounds points
+            scatterAxises();
     }
 
     function drawScatter(){
@@ -779,43 +798,8 @@
             .extent([[margL,margT],[1000 - margR, 200 - margB]])
             .on('end', updateScatterBrush)
         )
-
-        // Axises
-        var tempAxis = d3.axisBottom()
-            .scale(tempScale)
-            .tickFormat(function(d){
-                return d + '\u00B0';
-            })
-            
-        svgScatter.append('g')
-            .attr('transform','translate(0,' + (200 - margB) + ")")
-            .attr('class', 'axis')
-            .call(tempAxis);
         
-        var iRateAxis = d3.axisLeft()
-            .scale(irateScale)
-            
-        svgScatter.append('g')
-            .attr('transform','translate(' + (margL) + ',0)')
-            .attr('class', 'axis')
-            .call(iRateAxis);
-
-        // Axis Labels
-        svgScatter.append("g").attr("class","label")
-            .attr('transform','translate(500,' + (200-2) + ")")
-            .append("text")
-            .attr('font-size', '11px')
-            .attr('font-family','Arial, Helvetica, sans-serif')
-            .text("Temperature \u00B0F")
-
-        svgScatter.append("g")
-        .attr("text-anchor", "middle") 
-            .attr("transform", `translate(${10},${200/2}) rotate(270)`)
-            .append("text")
-            .attr('font-size', '11px')
-            .attr('font-family','Arial, Helvetica, sans-serif')
-            .attr('text-rendering','optimizeLegibility')
-            .text("7 Day Cases / 100k pop")
+        scatterAxises();
 
         function updateScatterBrush({selection}){
             // get the bounds of the selected area scaled to irate and temperature
@@ -836,6 +820,115 @@
             applyFilters();
         }
 
+    }
+
+    function scatterAxises(){
+
+        // filters.margT = margT;
+        // filters.margR = margR;
+        // filters.margL = margL;
+        // filters.margB = margB;
+
+        // background rectangles for hiding out of bounds points
+        // needed for left and top
+        d3.selectAll('.axisBkgrnd').remove();
+        svgScatter.append('rect')
+            .classed('axisBkgrnd', true)
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('height', 200)
+            .attr('width', filters.margL)
+        svgScatter.append('rect')
+            .classed('axisBkgrnd', true)
+            .attr('x', 0)
+            .attr('y', 0)
+            .attr('height', filters.margT)
+            .attr('width', 1000)
+
+        //Title
+        svgScatter.append("g")
+            .attr("text-anchor", "middle")
+            .attr('transform','translate(500,' + filters.margT + ")")
+            .append("text")
+            .attr('font-size', '12px')
+            .attr('font-family','Arial, Helvetica, sans-serif')
+            .text("Infection Rate vs Temperature")
+
+        // Axises
+        var tempAxis = d3.axisBottom()
+            .scale(filters.currTempScale)
+            .tickFormat(function(d){
+                return d + '\u00B0';
+            })
+        
+        svgScatter.append('g')
+            .attr('transform','translate(0,' + (200 - filters.margB) + ")")
+            .attr('class', 'axis')
+            .call(tempAxis);
+        
+        var iRateAxis = d3.axisLeft()
+            .scale(filters.currIrateScale)
+            
+        svgScatter.append('g')
+            .attr('transform','translate(' + (filters.margL) + ',0)')
+            .attr('class', 'axis')
+            .call(iRateAxis);
+
+        // Axis Labels
+        svgScatter.append("g").attr("class","label")
+            .attr('transform','translate(500,' + (200-2) + ")")
+            .append("text")
+            .attr('font-size', '11px')
+            .attr('font-family','Arial, Helvetica, sans-serif')
+            .text("Temperature \u00B0F")
+
+        svgScatter.append("g")
+            .attr("text-anchor", "middle") 
+            .attr("transform", `translate(${10},${200/2}) rotate(270)`)
+            .append("text")
+            .attr('font-size', '11px')
+            .attr('font-family','Arial, Helvetica, sans-serif')
+            .attr('text-rendering','optimizeLegibility')
+            .text("7 Day Cases / 100k pop")
+    }
+
+    // may add later
+    // code from: https://stackoverflow.com/questions/6195335/linear-regression-in-javascript
+    function linRegr(){
+        var lr = {};
+        var sum_x = 0;
+        var sum_y = 0;
+        var sum_xy = 0;
+        var sum_xx = 0;
+        var sum_yy = 0;
+
+        // get x and y
+        let x = [];
+        let y = [];
+        for (var i =0; i < filtered_irate_data.length; i++){
+            x.push(+filtered_irate_data[i].temp);
+            y.push(+filtered_irate_data[i].rate)
+        }
+        // console.log(x);
+        // console.log(y);
+        var n = y.length;
+
+        for (var i = 0; i < y.length; i++) {
+
+            sum_x += x[i];
+            sum_y += y[i];
+            sum_xy += (x[i]*y[i]);
+            sum_xx += (x[i]*x[i]);
+            sum_yy += (y[i]*y[i]);
+        } 
+
+        lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
+        lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
+        lr['r2'] = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
+
+        console.log(lr);
+
+        return lr;
     }
 
     function resetFilters(){
