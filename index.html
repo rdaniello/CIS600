@@ -20,7 +20,7 @@
     </style>
 </head>
 <body>
-<div id="caption">
+<div id="caption" style="text-align: center;">
     COVID-19 Effects of Temperature on Infection Rate
 </div>
 
@@ -932,6 +932,12 @@
     }
 
     function resetFilters(){
+        // reset map scale and center
+        mapZoom = {'k': 1, 'x': 1, 'y':1};
+
+        // clear selected county highlighted points
+        hlightPoints = [];
+        
         // set the filter back to intial values
         filters.resetFiltersValues();   
 
