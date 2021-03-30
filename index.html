@@ -550,7 +550,7 @@
         let avgMap = null;
         let height = 370;
         let width = 1000;
-        let margin = 50;
+        let margin = 70;
 
         // group the data by date
         if(type == 'temp'){
@@ -560,7 +560,7 @@
         }
         else{
             avgMap = d3.rollup(filtered_irate_data,
-                            v => d3.mean(v, d => d.cases), 
+                            v => d3.sum(v, d => d.cases), 
                             d => d.week);
         }
 
@@ -569,7 +569,8 @@
         avgMap.forEach(function(value, key){
             barData.push({
                 date: new Date(key),
-                val: value
+                val: value,
+                dType: type 
             })
         })
         barData = barData.sort(function(a,b){
@@ -582,8 +583,14 @@
         let xExtent = d3.extent(avgMap.keys(), function(d,i){
                 return i;
         })
+        let xExtentDate = d3.extent(avgMap.keys(), function(d,i){
+                return new Date(d);
+        })
         let xScale = d3.scaleLinear()
                         .domain(xExtent)
+                        .range([margin, width - margin]);
+        let xScaleDate = d3.scaleTime()
+                        .domain(xExtentDate)
                         .range([margin, width - margin]);
         
         let yExtent = d3.extent(barData, function(d){
@@ -629,6 +636,72 @@
             .attr('fill', function(d){
                 return d3.interpolateRdYlBu(colorScale(d.val));
             })
+            .on("mousemove",function (mouseData,d){
+                //console.log(mouseData);
+                d3.selectAll('.tooltip').remove();
+                d3.selectAll('.tooltipScatter').remove();
+                d3.select('body')
+                    .append("div")
+                    .classed('tooltipScatter',true)
+                    .style("opacity",.9)
+                    .style("left",(mouseData.x -150).toString() +"px")
+                    .style("top",(mouseData.y + 10).toString()+"px")
+                    .style('height', '40px')
+                    .style('width', '150px')
+                    .html(function(){
+                        var valueStr = '';
+                        if(d.dType == 'temp'){
+                            valueStr = '<b>Temperature:</b> ' + d.val.toFixed(2) + '\u00B0' + 'F';
+                        }
+                        else{
+                            valueStr = '<b>Weekly Cases:</b> ' + d.val;
+                        }
+                        return "<div class='tooltipData' style='text-align:center;font-weight:bold'></div>" +
+                        "<div class='tooltipData'><b>Date:</b> "+ d.date.toDateString() +"</div>" +
+                        "<div class='tooltipData'>"+ valueStr +"</div>"
+                    })
+            })
+            .on("mouseleave",function (mouseData,d){
+                d3.selectAll('.tooltip').remove();
+                d3.selectAll('.tooltipScatter').remove();
+
+            })
+
+        // draw the x(time axis)
+        let xSVG = d3.select('#canvasBarDateAxis');
+        xsvg = xSVG.selectAll('g').remove();
+
+        var xAxis = d3.axisBottom()
+            .scale(xScaleDate)
+            .tickFormat(function(d){
+                return (d.getMonth() + 1) +'/' + d.getFullYear();
+            })
+        
+        xSVG.append('g')
+            .attr('transform','translate(0,0)')
+            .attr('class', 'axis')
+            .style("font-size", "16px")
+            .call(xAxis);
+
+        // draw the y(data axis)
+        tempSVG.selectAll('g').remove();
+
+        var yAxis = d3.axisLeft()
+            .scale(yScale)
+            .tickFormat(function(d){
+                if(type == 'temp'){
+                    return d+ '\u00B0';
+                }
+                else{
+                    return d/1000 + 'K';
+                }
+            })
+        
+        tempSVG.append('g')
+            .attr('transform','translate('+ margin + ',0)')
+            .attr('class', 'axis')
+            .style("font-size", "18px")
+            .call(yAxis);
     }
 
     function drawHighLightedData(){
