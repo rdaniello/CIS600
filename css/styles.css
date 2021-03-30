@@ -67,3 +67,10 @@ circle.hlight{
     fill:rgb(245, 245, 255);
     stroke: rgb(245, 245, 255);
 }
+.outline{
+    stroke:black;
+    stroke-width: 2px;
+}
+.bar{
+    stroke:none;
+}

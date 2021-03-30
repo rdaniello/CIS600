@@ -566,11 +566,11 @@
 
         // transform into array of JSON - need to sort by date
         let barData = [];
-        avgMap.forEach(function(value, key){
+        avgMap.forEach(function(value, key, i){
             barData.push({
                 date: new Date(key),
                 val: value,
-                dType: type 
+                dType: type,
             })
         })
         barData = barData.sort(function(a,b){
@@ -599,7 +599,7 @@
   
         let yScale = d3.scaleLinear()
             .domain(yExtent)
-            .range([height - margin, margin])
+            .range([height -10, 10])
 
         // color Scale - for temp use constant scale
         colorScale = null;
@@ -620,7 +620,11 @@
             .data(barData)
             .enter()
             .append('rect')
+            .attr('class',function(d){
+                return 'b' + d.date.getTime();
+            })
             .classed('bars', true)
+            
             .attr('x', function(d,i){
                 return xScale(i);
             })
@@ -633,18 +637,36 @@
             .attr('width', function(d){
                 return (width-2*margin)/ avgMap.size;
             })
-            .attr('fill', function(d){
+            .attr('fill', function(d,i){
                 return d3.interpolateRdYlBu(colorScale(d.val));
             })
-            .on("mousemove",function (mouseData,d){
-                //console.log(mouseData);
+            .on("mousemove",function (mouseData,d,i){
+                // get the corresponding bar chart element
+                let othBar = null;
+                if(d.dType == 'temp'){
+                    othSVG = d3.select('#canvasBarIRate')
+                    othBar = othSVG.select('.b' + d.date.getTime())
+                }
+                else{
+                    othSVG = d3.select('#canvasBarTemp')
+                    othBar = othSVG.select('.b' + d.date.getTime())
+                }
+
+                // reset all bar strokes
+                d3.selectAll('.bars').classed('outline',false)
+
+                // outline 2 corresponding bars
+                othBar.classed('outline',true);
+                d3.select(this).classed('outline',true);
+
+                // add tooltip
                 d3.selectAll('.tooltip').remove();
                 d3.selectAll('.tooltipScatter').remove();
                 d3.select('body')
                     .append("div")
                     .classed('tooltipScatter',true)
                     .style("opacity",.9)
-                    .style("left",(mouseData.x -150).toString() +"px")
+                    .style("left",(mouseData.x -170).toString() +"px")
                     .style("top",(mouseData.y + 10).toString()+"px")
                     .style('height', '40px')
                     .style('width', '150px')
@@ -664,7 +686,7 @@
             .on("mouseleave",function (mouseData,d){
                 d3.selectAll('.tooltip').remove();
                 d3.selectAll('.tooltipScatter').remove();
-
+                d3.selectAll('.bars').classed('outline',false)
             })
 
         // draw the x(time axis)
@@ -1002,7 +1024,7 @@
         lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
         lr['r2'] = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
 
-        console.log(lr);
+        //console.log(lr);
 
         return lr;
     }
