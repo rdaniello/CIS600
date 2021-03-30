@@ -260,10 +260,13 @@
                 <div class="col-6 ">
                     <div class="col-12 border border-right-0 rounded" style="background-color:rgb(245, 245, 255);">
                         <div class='row' >
-                            <svg id="canvasBarTemp" viewBox="0 0 1000 200"></svg> 
+                            <svg id="canvasBarIRate" viewBox="0 0 1000 370"></svg> 
+                        </div>
+                        <div class=row>
+                            <svg id="canvasBarDateAxis" viewBox="0 0 1000 20"></svg> 
                         </div>
                         <div class='row' >
-                            <svg id="canvasBarIRate" viewBox="0 0 1000 200"></svg> 
+                            <svg id="canvasBarTemp" viewBox="0 0 1000 370"></svg> 
                         </div>
                     </div>
                 </div>
@@ -545,9 +548,9 @@
 
     function drawBar(svgContainer, type){
         let avgMap = null;
-        let height = 200;
+        let height = 370;
         let width = 1000;
-        let margin = 0;
+        let margin = 50;
 
         // group the data by date
         if(type == 'temp'){
@@ -557,7 +560,7 @@
         }
         else{
             avgMap = d3.rollup(filtered_irate_data,
-                            v => d3.mean(v, d => d.rate), 
+                            v => d3.mean(v, d => d.cases), 
                             d => d.week);
         }
 
@@ -589,7 +592,7 @@
   
         let yScale = d3.scaleLinear()
             .domain(yExtent)
-            .range([200 - margin, margin])
+            .range([height - margin, margin])
 
         // color Scale - for temp use constant scale
         colorScale = null;
