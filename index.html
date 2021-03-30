@@ -55,7 +55,7 @@
             <div class="row" style=" padding:15px; text-align:left; font-size: 14px">
                 <div class="row" style="text-align:left; padding-left: 5px;">State:</div>
                 <span type="text" id="dateSliderTxt" readonly style="border:0; color:#f6931f; font-size: 14px; width:100%; margin:auto"></span> 
-                <div style="width: 95%; margin:auto; height:400px; overflow-y: scroll;" id="stateDiv">
+                <div style="width: 95%; margin:auto; height:334px; overflow-y: scroll;" id="stateDiv">
                     <div id='northeast' class='stateFilterCOL'>
                         <div  class='row'>
                             <div class='col-8' onclick='toggleExpand("northeast")'><span id='neTxt'>+</span> Northeast </div>
@@ -299,7 +299,7 @@
     // Source 1: county meta
     let covid19="data/countymeta.csv";
     // Source 2: time series infection rate data
-    let iratefile = "data/irate2.csv";
+    let iratefile = "data/irate.csv";
     // Source 3: US Census Counties geojson
     let geojson = "data/us_counties_topo.json";
 
