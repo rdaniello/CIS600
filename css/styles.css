@@ -4,9 +4,9 @@
 }
 .tooltip{
     opacity: 0;
-    background-color: antiquewhite;
+    background-color: rgb(117, 166, 189);
     position: absolute;
-    width: 150px;
+    width: 165px;
     height: 60px;
     border-radius:5px;
     padding-left: 5px;
@@ -15,7 +15,7 @@
     opacity: 0;
     background-color: rgb(117, 166, 189);
     position: absolute;
-    width: 175px;
+    width: 160px;
     height: 85px;
     border-radius:5px;
     padding-left: 5px;
