@@ -55,7 +55,7 @@
             <div class="row" style=" padding:15px; text-align:left; font-size: 14px">
                 <div class="row" style="text-align:left; padding-left: 5px;">State:</div>
                 <span type="text" id="dateSliderTxt" readonly style="border:0; color:#f6931f; font-size: 14px; width:100%; margin:auto"></span> 
-                <div style="width: 95%; margin:auto; height:334px; overflow-y: scroll;" id="stateDiv">
+                <div style="width: 95%; margin:auto; height:355px; overflow-y: scroll;" id="stateDiv">
                     <div id='northeast' class='stateFilterCOL'>
                         <div  class='row'>
                             <div class='col-8' onclick='toggleExpand("northeast")'><span id='neTxt'>+</span> Northeast </div>
@@ -253,12 +253,17 @@
             <div class="row" id="container">
                 <div class="col-6 ">
                     <div class="col-12 border border-right-0 rounded" style="background-color:rgb(245, 245, 255);">
-                        <svg id="canvasMap" viewBox="0 0 1000 800"></svg>
-                        
+                        <div class=row>
+                            <svg id="canvasMapTitle" viewBox="0 0 1000 30"></svg> 
+                        </div>
+                            <svg id="canvasMap" viewBox="0 0 1000 800"></svg>
                     </div>
                 </div>
                 <div class="col-6 ">
                     <div class="col-12 border border-right-0 rounded" style="background-color:rgb(245, 245, 255);">
+                        <div class=row>
+                            <svg id="canvasBarTitle" viewBox="0 0 1000 30"></svg> 
+                        </div>
                         <div class='row' >
                             <svg id="canvasBarIRate" viewBox="0 0 1000 370"></svg> 
                         </div>
@@ -495,6 +500,8 @@
                     return "white"
                 }
             })
+        
+        // apply zoom setting and attach callbacks
         mapCanvas.attr('transform', mapZoom);
         svgMap.call(d3.zoom()
             .extent([[0,0],[1000,800]])
@@ -505,6 +512,17 @@
             mapCanvas.attr("transform",transform)
             mapZoom = transform;
         }
+
+        //Title
+        let mapTitleSVG = d3.select('#canvasMapTitle');
+        mapTitleSVG.selectAll('g').remove();
+        mapTitleSVG.append("g")
+            .attr("text-anchor", "middle")
+            .attr('transform','translate(500,25)')
+            .append("text")
+            .attr('font-size', '24px')
+            .attr('font-family','Arial, Helvetica, sans-serif')
+            .text("Population Density / Square Mile")
     }
 
     function applyFilters(){
@@ -546,6 +564,7 @@
         drawMap();
     }
 
+    // used to draw both barcharts - called twice
     function drawBar(svgContainer, type){
         let avgMap = null;
         let height = 370;
@@ -553,23 +572,21 @@
         let margin = 70;
 
         // group the data by date
-        if(type == 'temp'){
-            avgMap = d3.rollup(filtered_irate_data,
+        avgMapTemp = d3.rollup(filtered_irate_data,
                             v => d3.mean(v, d => d.temp), 
                             d => d.week);
-        }
-        else{
-            avgMap = d3.rollup(filtered_irate_data,
+
+        sumMapCases = d3.rollup(filtered_irate_data,
                             v => d3.sum(v, d => d.cases), 
                             d => d.week);
-        }
 
         // transform into array of JSON - need to sort by date
         let barData = [];
-        avgMap.forEach(function(value, key, i){
+        avgMapTemp.forEach(function(value, key, i){
             barData.push({
                 date: new Date(key),
-                val: value,
+                temp: value,
+                cases: sumMapCases.get(key),
                 dType: type,
             })
         })
@@ -580,11 +597,11 @@
         })
 
         // extents and scales
-        let xExtent = d3.extent(avgMap.keys(), function(d,i){
+        let xExtent = d3.extent(barData, function(d,i){
                 return i;
         })
-        let xExtentDate = d3.extent(avgMap.keys(), function(d,i){
-                return new Date(d);
+        let xExtentDate = d3.extent(barData, function(d,i){
+                return new Date(d.date);
         })
         let xScale = d3.scaleLinear()
                         .domain(xExtent)
@@ -592,35 +609,41 @@
         let xScaleDate = d3.scaleTime()
                         .domain(xExtentDate)
                         .range([margin, width - margin]);
-        
+
         let yExtent = d3.extent(barData, function(d){
-                return d.val;
+            if(type == 'temp'){
+                return d.temp;
+            }
+            else{
+                return d.cases;
+            }
         })
   
         let yScale = d3.scaleLinear()
             .domain(yExtent)
             .range([height -10, 10])
 
-        // color Scale - for temp use constant scale
+        // color Scale - for temp use low and high from filter - entire data set
         colorScale = null;
         if(type == 'temp'){
             colorScale = d3.scaleLinear()
-                .domain(yExtent)
+                .domain([filters.lowWeeklyTempI, filters.highWeeklyTempI])
                 .range([1,0])
         }
         else{
             colorScale = d3.scaleLinear()
-                .domain(yExtent)
+                .domain([filters.lowWeeklyCaseTotI, filters.highWeeklyCaseTotI])
                 .range([1,0])
         }
 
-        let tempSVG = d3.select('#' + svgContainer)
-        tempSVG.selectAll('.bars').remove()
-        tempSVG.selectAll('.bars')
+        let tmpSVG = d3.select('#' + svgContainer)
+        tmpSVG.selectAll('.bars').remove()
+        tmpSVG.selectAll('.bars')
             .data(barData)
             .enter()
             .append('rect')
             .attr('class',function(d){
+                // assign class to pair the barchart charts by date for highlighting mouse over
                 return 'b' + d.date.getTime();
             })
             .classed('bars', true)
@@ -629,16 +652,35 @@
                 return xScale(i);
             })
             .attr('y', function(d){
-                return yScale(d.val)
+                var val = 0;
+                if(type == 'temp'){
+                    val = d.temp;
+                }
+                else{
+                    val = d.cases;
+                }
+                return yScale(val);
             })
             .attr('height', function(d){
-                return height - yScale(d.val);
+                var val = 0;
+                if(type == 'temp'){
+                    val = d.temp;
+                }
+                else{
+                    val = d.cases;
+                }
+                return height - yScale(val);
             })
             .attr('width', function(d){
-                return (width-2*margin)/ avgMap.size;
+                return (width-2*margin)/ barData.length;
             })
             .attr('fill', function(d,i){
-                return d3.interpolateRdYlBu(colorScale(d.val));
+                if(type == 'temp'){
+                    return d3.interpolateRdYlBu(colorScale(d.temp));
+                }
+                else{
+                    return d3.interpolateRdYlBu(colorScale(d.cases));
+                }
             })
             .on("mousemove",function (mouseData,d,i){
                 // get the corresponding bar chart element
@@ -668,19 +710,13 @@
                     .style("opacity",.9)
                     .style("left",(mouseData.x -170).toString() +"px")
                     .style("top",(mouseData.y + 10).toString()+"px")
-                    .style('height', '40px')
+                    .style('height', '60px')
                     .style('width', '150px')
                     .html(function(){
-                        var valueStr = '';
-                        if(d.dType == 'temp'){
-                            valueStr = '<b>Temperature:</b> ' + d.val.toFixed(2) + '\u00B0' + 'F';
-                        }
-                        else{
-                            valueStr = '<b>Weekly Cases:</b> ' + d.val;
-                        }
                         return "<div class='tooltipData' style='text-align:center;font-weight:bold'></div>" +
                         "<div class='tooltipData'><b>Date:</b> "+ d.date.toDateString() +"</div>" +
-                        "<div class='tooltipData'>"+ valueStr +"</div>"
+                        "<div class='tooltipData'><b>Temperature:</b> "+ d.temp.toFixed(2) +"\u00B0 F</div>" +
+                        "<div class='tooltipData'><b>Weekly Cases:</b> "+ d.cases +"</div>"
                     })
             })
             .on("mouseleave",function (mouseData,d){
@@ -706,7 +742,7 @@
             .call(xAxis);
 
         // draw the y(data axis)
-        tempSVG.selectAll('g').remove();
+        tmpSVG.selectAll('g').remove();
 
         var yAxis = d3.axisLeft()
             .scale(yScale)
@@ -719,11 +755,22 @@
                 }
             })
         
-        tempSVG.append('g')
+        tmpSVG.append('g')
             .attr('transform','translate('+ margin + ',0)')
             .attr('class', 'axis')
-            .style("font-size", "18px")
+            .style('font-size', '16px')
             .call(yAxis);
+        
+        //Title
+        let barTitleSVG = d3.select('#canvasBarTitle');
+        barTitleSVG.selectAll('g').remove();
+        barTitleSVG.append("g")
+            .attr("text-anchor", "middle")
+            .attr('transform','translate(500,25)')
+            .append("text")
+            .attr('font-size', '24px')
+            .attr('font-family','Arial, Helvetica, sans-serif')
+            .text("Time Series Comparison: Cases and Temperature")
     }
 
     function drawHighLightedData(){

@@ -26,6 +26,10 @@ class Filters{
         this.lowDateI = new Date(2020,1,1)
         this.highDateI = new Date(2021,2,1);
         this.stateFilterI = this.stateFilter;
+        this.highWeeklyCaseTotI = 0;
+        this.lowWeeklyCaseTotI = 0;
+        this.highWeeklyTempI = 0;
+        this.lowWeeklyTempI = 0;
 
         // margins 
         this.margT = 20;
@@ -93,6 +97,31 @@ class Filters{
         })
         this.highTemp = temp_extent[1];
         this.lowTemp = temp_extent[0];
+
+        // weekly avg temp values for entire data set
+        // used for consistent color scale in bar charts
+        let avgMapTemp = d3.rollup(filtered_irate_data,
+                                v => d3.mean(v, d => d.temp), 
+                                d => d.week);
+        
+        this.highWeeklyTempI = d3.max(avgMapTemp, function(item,idx){
+                                        return item[1];
+                                    })
+        this.lowWeeklyTempI = d3.min(avgMapTemp, function(item,idx){
+                                        return item[1];
+                                    })
+
+        // weekly total cases for entire data set
+        // used for consistent color scale in bar charts
+        let sumMapCases = d3.rollup(filtered_irate_data,
+                                v => d3.sum(v, d => d.cases), 
+                                d => d.week);
+        this.highWeeklyCaseTotI = d3.max(sumMapCases, function(item,idx){
+                                        return item[1];
+                                    })
+        this.lowWeeklyCaseTotI = d3.min(sumMapCases, function(item,idx){
+                                        return item[1];
+                                    })
 
 
         // population density
