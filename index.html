@@ -438,13 +438,13 @@
                 d3.select('body')
                     .append("div")
                     .classed('tooltip',true)
-                    .style("opacity",.8)
+                    .style("opacity",.9)
                     .style("left",(mouseData.x + 10).toString() +"px")
                     .style("top",(mouseData.y + 10).toString()+"px")
                     .html(
                         "<div class='tooltipData'>County: "+county_data.get(d.properties.GEOID)[0].cname+"</div>" +
                         "<div class='tooltipData'>State: "+county_data.get(d.properties.GEOID)[0].sname+"</div>" +
-                        "<div class='tooltipData' style='color:blue'>Pop Density: "+county_data.get(d.properties.GEOID)[0].density.toString()+" / sq. mile</div>" 
+                        "<div class='tooltipData'>Pop Density: "+county_data.get(d.properties.GEOID)[0].density.toString()+" / sq. mile</div>" 
                     )
             })
             .on("mouseleave",function (mouseData,d){
