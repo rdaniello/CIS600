@@ -292,6 +292,7 @@
     var filters = new Filters();
 
     // previously selected county vars
+    let prevCountyFips = null;
     let prevCountyElem = null;
     let prevCountColor = null;
 
@@ -316,80 +317,9 @@
             d3.json(geojson),
             d3.csv(covid19),
             d3.csv(iratefile)],d3.autoType()).then(main)
-
-    function getColor(density){
-        if(density < 25){
-            return 0;
-        }
-        if(density < 50){
-            return 1;
-        }
-        if(density < 75){
-            return 2;
-        }
-        if(density < 100){
-            return 3;
-        }
-        if(density < 150){
-            return 4;
-        }
-        if(density < 200){
-            return 5;
-        }
-        if(density < 300){
-            return 6;
-        }
-        if(density < 500){
-            return 7;
-        }
-        if(density < 700){
-            return 8;
-        }
-        if(density < 1000){
-            return 9;
-        }
-        if(density < 2000){
-            return 10;
-        }
-        return 11
-    }
-
     
     function checkToggleRegion(elem, region){
         filters.toggleRegion(elem, region);
-    }
-
-    function checkBoxEvt(elem, stateID){
-        let tmpArr = [];
-        if(elem.checked){
-            filters.stateFilter.push(stateID);
-        }
-        else{
-            tmpArr = filters.stateFilter.filter(function(val){
-                if(val != stateID){
-                    return val
-                }
-            })
-            filters.stateFilter = tmpArr;
-        }
-        
-        applyFilters();
-    }
-
-    function toggleExpand(id){
-        let elem = d3.select('#' + id);
-        if(elem.classed('stateFilterEX')){
-            elem.classed('stateFilterEX', false);
-            elem.classed('stateFilterCOL', true);
-            elem.select('span')
-                .text('+')
-        }
-        else{
-            elem.classed('stateFilterEX', true);
-            elem.classed('stateFilterCOL', false);
-            elem.select('span')
-                .text('-')
-        }
     }
 
     function main(data){    
@@ -453,28 +383,49 @@
 
             })
             .on("click",function (mouseData,d){
-                // unhighlight selected county back to original color - if one is
-                if(!(prevCountyElem === null)){
-                    prevCountyElem.attr('fill', prevCountColor);
+                // if the same county is clicked then unhightlight and put reg line back
+                if(d.properties.GEOID == prevCountyFips){
+                    let countyElem = d3.select(this);
+                    countyElem.attr('fill', prevCountColor);
+                    prevCountColor = null;
+                    prevCountyElem = null;
+                    prevCountyFips = null;
+                    hlightPoints = [];
+
+                    // remove any old highlighted points
+                    svgScatter.select('#hlightGrp').remove();
+
+                    // draw regression line
+                    linRegr();
                 }
+                else{
+                    // unhighlight selected county back to original color - if one is
+                    if(!(prevCountyElem === null)){
+                        prevCountyElem.attr('fill', prevCountColor);
+                    }
 
-                // will draw a highlighted poiint over data point 
-                // faster than assigning class to each point
-                // and then letting d3 select by class
-                // update highlighted array and then call to draw highleted points
-                hlightPoints = [];
-                hlightPoints = irate_data.filter(function(item){
-                        return item.fips == d.properties.GEOID;
-                })
+                    // will draw a highlighted point over data point 
+                    // faster than assigning class to each point
+                    // and then letting d3 select by class
+                    // update highlighted array and then call to draw highleted points
+                    hlightPoints = [];
+                    hlightPoints = irate_data.filter(function(item){
+                            return item.fips == d.properties.GEOID;
+                    })
 
-                // update previous selected county to this one
-                prevCountyElem = d3.select(this);
-                prevCountColor = prevCountyElem.attr('fill');
+                    // update previous selected county to this one
+                    prevCountyElem = d3.select(this);
+                    prevCountColor = prevCountyElem.attr('fill');
+                    prevCountyFips = d.properties.GEOID;
 
-                // change selected fill color
-                prevCountyElem.attr('fill', 'rgb(117, 166, 189)');
+                    // change selected fill color
+                    prevCountyElem.attr('fill', 'rgb(117, 166, 189)');
 
-                drawHighLightedData();
+                    // only draw if there are points to draw
+                    if(hlightPoints.length > 0){
+                        drawHighLightedData();
+                    }
+                }
             })
 
             .transition()
@@ -553,10 +504,8 @@
         $( "#filteredCount" ).text(tmpfil.length);
         
         filtered_irate_data = tmpfil;
-
-        // calc linear regression
-        linRegr();
         
+        // draw visulaization elements
         drawBar('canvasBarTemp', 'temp');
         drawBar('canvasBarIRate', 'irate');
         drawScatter();
@@ -778,6 +727,11 @@
         // draw on top of the scatter plot here
         // uses scales calculated in scatter draw so it's not done twice
 
+        // remove linear regression line if highlighted pints to draw
+        if(hlightPoints.length > 0){
+            svgScatter.selectAll('.linregline').remove();
+        }
+
         // create colorscale to better visualize time series 
         let hlightExtent = d3.extent(hlightPoints, function(d){
             return new Date(d.week);
@@ -799,12 +753,12 @@
                     .x(function(d){return filters.currTempScale(d.temp)})
                     .y(function(d){return filters.currIrateScale(d.rate)});
             
-            hlightGrp.append('path')
-                .datum(hlightPoints)
-                .attr('stroke', 'black')
-                .attr('stroke-width', 1)
-                .attr('d', line)
-                .style('fill', 'none');
+        hlightGrp.append('path')
+            .datum(hlightPoints)
+            .attr('stroke', 'black')
+            .attr('stroke-width', 1)
+            .attr('d', line)
+            .style('fill', 'none');
 
         // the points
         hlightGrp.selectAll('circle')
@@ -824,7 +778,6 @@
             .attr('r', 0)
             .attr("fill", 'black')
             .on("mousemove",function (mouseData,d){
-                //console.log(mouseData);
                 d3.selectAll('.tooltip').remove();
                 d3.selectAll('.tooltipScatter').remove();
                 d3.select('body')
@@ -946,6 +899,9 @@
         
         scatterAxises();
 
+        // calc and draw linear regression
+        linRegr();
+
         function updateScatterBrush({selection}){
             // get the bounds of the selected area scaled to irate and temperature
             // set the 
@@ -964,16 +920,9 @@
 
             applyFilters();
         }
-
     }
 
     function scatterAxises(){
-
-        // filters.margT = margT;
-        // filters.margR = margR;
-        // filters.margL = margL;
-        // filters.margB = margB;
-
         // background rectangles for hiding out of bounds points
         // needed for left and top
         d3.selectAll('.axisBkgrnd').remove();
@@ -1037,7 +986,7 @@
             .text("7 Day Cases / 100k pop")
     }
 
-    // may add later
+    // displays best fit straight line of filtered data
     // code from: https://stackoverflow.com/questions/6195335/linear-regression-in-javascript
     function linRegr(){
         var lr = {};
@@ -1047,32 +996,94 @@
         var sum_xx = 0;
         var sum_yy = 0;
 
-        // get x and y
-        let x = [];
-        let y = [];
-        for (var i =0; i < filtered_irate_data.length; i++){
-            x.push(+filtered_irate_data[i].temp);
-            y.push(+filtered_irate_data[i].rate)
+        // remove old line
+        svgScatter.selectAll('.linregline').remove();
+
+        // if there are no highlighted (county selected) points the draw line
+        // also there has to data
+        if(hlightPoints.length == 0 && filtered_irate_data.length > 0){
+            // get x and y
+            let x = [];
+            let y = [];
+            for (var i =0; i < filtered_irate_data.length; i++){
+                x.push(+filtered_irate_data[i].temp);
+                y.push(+filtered_irate_data[i].rate)
+            }
+
+            var n = y.length;
+
+            for (var i = 0; i < y.length; i++) {
+
+                sum_x += x[i];
+                sum_y += y[i];
+                sum_xy += (x[i]*y[i]);
+                sum_xx += (x[i]*x[i]);
+                sum_yy += (y[i]*y[i]);
+            } 
+
+            lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
+            lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
+            lr['r2'] = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
+
+            // y intercept
+            let yInt = lr['intercept'];
+            if(yInt < 0){
+                yInt = (lr['slope'] * filters.highTemp) + lr['intercept']
+            }
+
+            // x intercept
+            let xInt = lr['intercept']/ (lr['slope'] * -1.0);
+
+            // calculate x1,x2,y1,y1
+            let x1 = x2 = y1 = y2 = 0.0;
+            if(lr['slope'] < 0){
+                x1 = filters.margL;
+                x2 = filters.currTempScale(xInt);
+                y1 = filters.currIrateScale(yInt);
+                y2 = 200 - filters.margB;
+            }
+            else{
+                x1 = 1000 - filters.margR;
+                x2 = filters.currTempScale(xInt);
+                y1 = filters.currIrateScale(yInt);
+                y2 = 200 - filters.margB;
+            }
+
+            // add the line
+            let lrg = svgScatter.append('g')
+            lrg.attr('class', 'linregline');
+
+            lrg.append('line')
+                .datum(lr)
+                .style("stroke", "red")  
+                .style("stroke-width", "1px")  
+                .attr("x1", function(){return x1})    
+                .attr("y1", function(){return y1})     
+                .attr("x2", function(){return x2})    
+                .attr("y2", function(){return y2})
+                .on("mousemove",function (mouseData,d){
+                    d3.selectAll('.tooltip').remove();
+                    d3.selectAll('.tooltipScatter').remove();
+                    d3.select('body')
+                        .append("div")
+                        .classed('tooltipScatter', true)
+                        .style("opacity",.9)
+                        .style('font-weight','bold')
+                        .style("left",(mouseData.x -150).toString() +"px")
+                        .style("top",(mouseData.y + 10).toString()+"px")
+                        .style('height', '40px')
+                        .style('width', '175px')
+                        .html(
+                            "<div class='tooltipData'>Line: y = " +d.slope.toFixed(2) + "x + " +  d.intercept.toFixed(2) + "</div>" +
+                            "<div class='tooltipData'>r2: "+d.r2.toFixed(2)+"</div>"
+                        )
+                })
+                .on("mouseleave",function (mouseData,d){
+                    d3.selectAll('.tooltip').remove();
+                    d3.selectAll('.tooltipScatter').remove();
+
+                })
         }
-        // console.log(x);
-        // console.log(y);
-        var n = y.length;
-
-        for (var i = 0; i < y.length; i++) {
-
-            sum_x += x[i];
-            sum_y += y[i];
-            sum_xy += (x[i]*y[i]);
-            sum_xx += (x[i]*x[i]);
-            sum_yy += (y[i]*y[i]);
-        } 
-
-        lr['slope'] = (n * sum_xy - sum_x * sum_y) / (n*sum_xx - sum_x * sum_x);
-        lr['intercept'] = (sum_y - lr.slope * sum_x)/n;
-        lr['r2'] = Math.pow((n*sum_xy - sum_x*sum_y)/Math.sqrt((n*sum_xx-sum_x*sum_x)*(n*sum_yy-sum_y*sum_y)),2);
-
-        //console.log(lr);
-
         return lr;
     }
 
@@ -1089,6 +1100,77 @@
         // get initial filtered fips and do intial drawing
         applyFilters();
     }
+
+    function getColor(density){
+        if(density < 25){
+            return 0;
+        }
+        if(density < 50){
+            return 1;
+        }
+        if(density < 75){
+            return 2;
+        }
+        if(density < 100){
+            return 3;
+        }
+        if(density < 150){
+            return 4;
+        }
+        if(density < 200){
+            return 5;
+        }
+        if(density < 300){
+            return 6;
+        }
+        if(density < 500){
+            return 7;
+        }
+        if(density < 700){
+            return 8;
+        }
+        if(density < 1000){
+            return 9;
+        }
+        if(density < 2000){
+            return 10;
+        }
+        return 11
+    }
+
+    function checkBoxEvt(elem, stateID){
+        let tmpArr = [];
+        if(elem.checked){
+            filters.stateFilter.push(stateID);
+        }
+        else{
+            tmpArr = filters.stateFilter.filter(function(val){
+                if(val != stateID){
+                    return val
+                }
+            })
+            filters.stateFilter = tmpArr;
+        }
+        
+        applyFilters();
+    }
+
+    function toggleExpand(id){
+        let elem = d3.select('#' + id);
+        if(elem.classed('stateFilterEX')){
+            elem.classed('stateFilterEX', false);
+            elem.classed('stateFilterCOL', true);
+            elem.select('span')
+                .text('+')
+        }
+        else{
+            elem.classed('stateFilterEX', true);
+            elem.classed('stateFilterCOL', false);
+            elem.select('span')
+                .text('-')
+        }
+    }
+
 </script>
 </body>
 </html>
