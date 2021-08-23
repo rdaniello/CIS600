@@ -6,7 +6,7 @@ class Filters{
         this.highPopDen = 0;
         this.lowTemp = 0;
         this.highTemp = 0;
-        this.lowDate = new Date(2020,1,1)
+        this.lowDate = new Date(2020,8,31)
         this.highDate = new Date(2021,2,1)
         this.stateFilter = ['01','02','04','05','06','08','09','10','11','12','13','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29',
                             '30','31','32','33','34','35','36','37','38','39','40','41','42','44','45','46','47','48','49','50','51','53','54','55','56'];
@@ -23,7 +23,7 @@ class Filters{
         this.highPopDenI = 0;
         this.lowTempI = 0;
         this.highTempI = 0;
-        this.lowDateI = new Date(2020,1,1)
+        this.lowDateI = new Date(2020,8,31)
         this.highDateI = new Date(2021,2,1);
         this.stateFilterI = this.stateFilter;
         this.highWeeklyCaseTotI = 0;
@@ -135,7 +135,7 @@ class Filters{
         let date_Extent = d3.extent(iratedata, function(d){
             return new Date(d.week);
         })
-        this.lowDate = date_Extent[0];
+        this.lowDate = new Date(2020,7,31);
         this.highDate = date_Extent[1];
 
         // assign these values to init fields 
